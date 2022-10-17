@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 config.ini
+test_dump.txt
 # C extensions
 *.so
 
