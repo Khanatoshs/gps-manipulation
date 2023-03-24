@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 config.ini
 test_dump.txt
+imagetest.py
 # C extensions
 *.so
 
