@@ -38,6 +38,8 @@ def split_yolo_line(yolLine:str):
         'cat': int(yolsplit[0]),
         'x': Decimal(yolsplit[1]),
         'y': Decimal(yolsplit[2]),
+        'xf': Decimal(yolsplit[1]) + Decimal(yolsplit[3]),
+        'yf': Decimal(yolsplit[2]) + Decimal(yolsplit[4]),
         'width': Decimal(yolsplit[3]),
         'height': Decimal(yolsplit[4])
     }
@@ -57,7 +59,7 @@ with rasterio.open(conf['tiff']) as rastiff:
     tiffh = rastiff.shape[0]
     tiffw = rastiff.shape[1]
     pixlist = list(map(lambda i: yolo_to_pixel(i, tiffw, tiffh), yoloList))
-    print(rastiff.xy(int(pixlist[0]['x']),int(pixlist[0]['y'])))
+    gpslist = list(map(lambda i:{'x0y0':rastiff.xy(int(i['x']),int(i['y'])),'xfyf':rastiff.xy(int(i['xf']),int(i['yf']))},pixlist))
 
 print(yoloList[0])
 print(tiffh,tiffw)
