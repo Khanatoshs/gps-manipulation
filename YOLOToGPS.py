@@ -27,6 +27,8 @@ def yolo_to_pixel(yolcoord:dict,imwidth,imheight):
     return {
         'x': px,
         'y':py,
+        'xf': px + pw,
+        'yf': py + ph,
         'width': pw,
         'height': ph
     }
@@ -38,8 +40,6 @@ def split_yolo_line(yolLine:str):
         'cat': int(yolsplit[0]),
         'x': Decimal(yolsplit[1]),
         'y': Decimal(yolsplit[2]),
-        'xf': Decimal(yolsplit[1]) + Decimal(yolsplit[3]),
-        'yf': Decimal(yolsplit[2]) + Decimal(yolsplit[4]),
         'width': Decimal(yolsplit[3]),
         'height': Decimal(yolsplit[4])
     }
@@ -59,10 +59,10 @@ with rasterio.open(conf['tiff']) as rastiff:
     tiffh = rastiff.shape[0]
     tiffw = rastiff.shape[1]
     pixlist = list(map(lambda i: yolo_to_pixel(i, tiffw, tiffh), yoloList))
-    gpslist = list(map(lambda i:{'x0y0':rastiff.xy(int(i['x']),int(i['y'])),'xfyf':rastiff.xy(int(i['xf']),int(i['yf']))},pixlist))
+    gpslist = list(map(lambda i:{'x0':rastiff.xy(int(i['x']),int(i['y']))[0],'y0':rastiff.xy(int(i['x']),int(i['y']))[1],'xf':rastiff.xy(int(i['xf']),int(i['yf']))[0],'yf':rastiff.xy(int(i['xf']),int(i['yf']))[1]},pixlist))
 
 print(yoloList[0])
-print(tiffh,tiffw)
+print(gpslist[0])
 print(pixlist[0])
 
 
