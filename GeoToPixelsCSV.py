@@ -82,8 +82,14 @@ def main():
     with fiona.open(conf.get('shape'),'r') as src_shp:
         # print(src_shp.schema['geometry'])
         geoType = str(src_shp.schema['geometry'])
-        if geoType == 'Point': 
-            shapes = list(map(lambda i: {'id': i['id'],'coordinates': i['geometry']['coordinates']},src_shp))
+        typeId = False
+        if len(src_shp.schema['properties'].keys()) == 1 and list(src_shp.schema['properties'].keys())[0] == 'Field':
+            typeId = True 
+        if geoType == 'Point':
+            if typeId:
+                shapes = list(map(lambda i: {'id': i['properties']['Field'],'coordinates': i['geometry']['coordinates']},src_shp))    
+            else:
+                shapes = list(map(lambda i: {'id': i['id'],'coordinates': i['geometry']['coordinates']},src_shp))
         else:
             shapes = list(map(lambda i: {'id': i['properties']['MERGE_SRC'] + '_' + str(i['properties']['id']),'coordinates': i['geometry']['coordinates'][0] if len(i['geometry']['coordinates']) <=1 else i['geometry']['coordinates']},src_shp))
 
@@ -106,7 +112,7 @@ def main():
                         # outf.write(str(shp['id']) + ';'  + str(i+1) + ';' + str(cor) + ';' + str((px,py)) + '\n')
                 else:
                     px,py = src_tiff.index(*shp['coordinates'])
-                    outf.writeLineCSV(delim,str(shp['id']),str(shp['coordinates'][0]),str(shp['coordinates'][1]),str(px),str(py))
+                    outf.writeLineCSV(delim,(str(shp['id']),str(shp['coordinates'][0]),str(shp['coordinates'][1]),str(px),str(py)))
                     # outf.write(str(shp['id']) + ',' + str(shp['coordinates'][0]) + ',' + str(shp['coordinates'][1]) + ',' + str(px) + ',' + str(py) + '\n')
         print('--- FINISHED WRITING FILE ---')
 
