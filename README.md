@@ -1,5 +1,5 @@
 # gps-manipulation
-Python program to manipulate gps data and extract necessary data for research
+Python scripts that focus on processing GPS data for research purposes
 
 ## GEO To Pixel Script
 
