@@ -11,12 +11,15 @@ Currently it only outputs a CSV file.
 Create a config.ini file
 Copy de data from config_sample.ini
 Fill the fields with custom data
+The config file only needs to be filled in the section [GEOTOPIXEL]
 
-### Instructions on how to fill config file:
+### Instructions on how to fill config section:
 ```
-tiff= (path to your .tif file)
-shape= (path to your .shp file)
+tiff = (path to your .tif file)
+shapes = (path to your .shp files, can be multiple)
+categories = (categories you wish to assign to each shapefile, they must be in the same order as the shape files)
 outfoldername = (path to the folder where you want the results)
-outfilename= (name of the file wth the results no file extension is needed)
-delimiter= (the type of delimiter you want to use for the csv the default should be , )
+outfilename = (name of the file wth the results no file extension is needed)
+orderby = (Name of the field you wih to sort the list with)
+delimiter = (the type of delimiter you want to use for the csv the default should be , )
 ```
