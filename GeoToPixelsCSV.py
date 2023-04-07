@@ -1,3 +1,4 @@
+import logging
 from genericpath import isfile
 import os
 import traceback
@@ -33,6 +34,7 @@ def read_config(filename) -> dict:
     outfilename = conf[section].get('outfilename')
     orderby = conf[section].get('orderby')
     delimiter = conf[section].get('delimiter')
+    logLevel = conf[section].get('logLevel')
     ret_dict = {
         'tiff':tiff,
         'shapes':shapes,
@@ -40,7 +42,8 @@ def read_config(filename) -> dict:
         'outfolder':outfolder,
         'outfilename': outfilename,
         'orderby': orderby,
-        'delimiter': delimiter
+        'delimiter': delimiter,
+        'logLevel': logLevel
     }
     return ret_dict
 
@@ -71,6 +74,7 @@ class CustomCSV:
         self.csvFile.write(dataStr)
 
 def map_shape(shape):
+    logging.debug("[DEBUG] --- Original shape data: " + str(shape))
     id = shape['id']
     coordinates =  shape['geometry']['coordinates']
     resdict = {
@@ -103,25 +107,35 @@ def get_row(px,py,cat,shape,index=None,cor=None):
 def process_shapefile(shapefile:str,cat:str,geoType:str,src_tiff,listCSV:list):
     shapes = None
     print('--- OPENING SHAPE FILE: ' + shapefile + ' ---')
-    with fiona.open(shapefile,'r') as src_shp:
-        geoType = str(src_shp.schema['geometry'])
-        typeId = False
-        if len(src_shp.schema['properties'].keys()) == 1 and list(src_shp.schema['properties'].keys())[0] == 'Field':
-            typeId = True 
-        if geoType == 'Point':
-            shapes = list(map(lambda i:map_shape(i),src_shp))
-        else:
-            shapes = list(map(lambda i: {'Fid': i['properties']['MERGE_SRC'] + '_' + str(i['properties']['id']),'coordinates': i['geometry']['coordinates'][0] if len(i['geometry']['coordinates']) <=1 else i['geometry']['coordinates']},src_shp))
-
+    logging.debug("[DEBUG] --- Opening shapefile: " + shapefile)
+    try:
+        with fiona.open(shapefile,'r') as src_shp:
+            logging.debug("[DEBUG] --- shapefile INFO: " + str(src_shp.crs))
+            logging.debug("[DEBUG] --- shapefile INFO: " + str(src_shp.driver))
+            logging.debug("[DEBUG] --- shapefile INFO: " + str(src_shp.bounds))
+            logging.debug("[DEBUG] --- shapefile INFO: " + str(src_shp.schema))
+            geoType = str(src_shp.schema['geometry'])
+            typeId = False
+            if len(src_shp.schema['properties'].keys()) == 1 and list(src_shp.schema['properties'].keys())[0] == 'Field':
+                typeId = True 
+            if geoType == 'Point':
+                shapes = list(map(lambda i:map_shape(i),src_shp))
+            else:
+                shapes = list(map(lambda i: {'Fid': i['properties']['MERGE_SRC'] + '_' + str(i['properties']['id']),'coordinates': i['geometry']['coordinates'][0] if len(i['geometry']['coordinates']) <=1 else i['geometry']['coordinates']},src_shp))
+    except FileNotFoundError(e):
+        logging.error(e)
+        print("ERROR --- FILE NOT FOUND: " + str(e))
+    logging.debug("[DEBUG] --- shapes: " + str(shapes))
     print('--- FOUND ' + str(len(shapes)) + ' SHAPES OF TYPE: ' + str(geoType) + ' ---')
     for shp in shapes:
         if geoType != 'Point':
             for i,cor in enumerate(shp['coordinates']):
-                px,py = src_tiff.index(*cor)
+                py,px = src_tiff.index(*cor)
                 listCSV.append(get_row(px, py, cat, shp,i+1,cor))
         else:
-            px,py = src_tiff.index(*shp['coordinates'])
+            py,px = src_tiff.index(*shp['coordinates'])
             listCSV.append(get_row(px, py, cat, shp))
+    logging.debug("[DEBUG] --- list for CSV: " + str(listCSV))
     return geoType
 
 
@@ -146,11 +160,16 @@ def get_headers(shapefile:str,geoType:str):
             
 
 def main():
+    
     if not os.path.exists('config.ini'):
         print('THE FILE config.ini WAS CREATED, PLEASE INPUT INITIAL DATA IN FILE')
         makeConf()
 
     conf = read_config('config.ini')
+    logLevel = conf.get('logLevel')
+    logging.basicConfig(filename="GeoLog.log",level=logLevel)
+    fiona.log.setLevel(logLevel)
+    rasterio.log.setLevel(logLevel)
 
     if not os.path.isdir(conf.get('outfolder')):
         os.mkdir(conf.get('outfolder'))
@@ -163,18 +182,24 @@ def main():
     orderby = conf.get('orderby')
     geoType = ''
 
-    with rasterio.open(tiff) as rasterTiff:
-        listCSV = []
-        geoType = ''
-        for i,shp in enumerate(shapefiles):
-            geoType = process_shapefile(shp,categories[i],geoType,rasterTiff,listCSV)
-        headers = get_headers(shapefiles[0], geoType)
-        try:
-            orderIndex = headers.index(orderby)
-        except ValueError():
-            orderIndex = 0
-        listCSV.sort(key=lambda elem: int(elem[orderIndex]))
-        writeCSV(outfile,delim,listCSV,headers)
+    try:
+        with rasterio.open(tiff) as rasterTiff:
+            logging.debug("[DEBUG] --- Raster info : " + str(rasterTiff.crs))
+            logging.debug("[DEBUG] --- Raster info: " + str(rasterTiff.bounds))
+            listCSV = []
+            geoType = ''
+            for i,shp in enumerate(shapefiles):
+                geoType = process_shapefile(shp,categories[i],geoType,rasterTiff,listCSV)
+            headers = get_headers(shapefiles[0], geoType)
+            try:
+                orderIndex = headers.index(orderby)
+            except ValueError():
+                orderIndex = 0
+            listCSV.sort(key=lambda elem: int(elem[orderIndex]))
+            writeCSV(outfile,delim,listCSV,headers)
+    except FileNotFoundError(e):
+        logging.error(e)
+        print("ERROR --- FILE NOT FOUND: " + str(e))
 
 if __name__ == '__main__':
     main()
