@@ -35,6 +35,7 @@ def read_config(filename) -> dict:
     orderby = conf[section].get('orderby')
     delimiter = conf[section].get('delimiter')
     logLevel = conf[section].get('logLevel')
+    showProperties = conf[section].getboolean('showproperties')
     ret_dict = {
         'tiff':tiff,
         'shapes':shapes,
@@ -43,7 +44,8 @@ def read_config(filename) -> dict:
         'outfilename': outfilename,
         'orderby': orderby,
         'delimiter': delimiter,
-        'logLevel': logLevel
+        'logLevel': logLevel,
+        'showproperties': showProperties
     }
     return ret_dict
 
@@ -84,14 +86,19 @@ def map_shape(shape):
     resdict.update(shape['properties'])
     return resdict
 
-def get_row(px,py,cat,shape,index=None,cor=None):
+def get_row(px,py,cat,shape,index=None,cor=None,required = None,showP = True):
     auxList = []
-    auxList.append(str(shape['Fid']))
+    if showP:
+        auxList.append(str(shape['Fid']))
     if index is not None:
         auxList.append(str(index))
     for k,it in shape.items():
-        if k != 'Fid' and k != 'coordinates':
-            auxList.append(str(it))
+        if showP:
+            if k != 'Fid' and k != 'coordinates':
+                auxList.append(str(it))
+        else:
+            if k == required:
+                auxList.append(str(it))
     if cor is not None:
         auxList.append(str(cor[0]))
         auxList.append(str(cor[1]))
@@ -101,10 +108,11 @@ def get_row(px,py,cat,shape,index=None,cor=None):
     auxList.append(str(px))
     auxList.append(str(py))
     auxList.append(cat)
+    # print(auxList)
     return auxList
     
 
-def process_shapefile(shapefile:str,cat:str,geoType:str,src_tiff,listCSV:list):
+def process_shapefile(shapefile:str,cat:str,geoType:str,src_tiff,listCSV:list,req,showP):
     shapes = None
     print('--- OPENING SHAPE FILE: ' + shapefile + ' ---')
     logging.debug("[DEBUG] --- Opening shapefile: " + shapefile)
@@ -134,7 +142,7 @@ def process_shapefile(shapefile:str,cat:str,geoType:str,src_tiff,listCSV:list):
                 listCSV.append(get_row(px, py, cat, shp,i+1,cor))
         else:
             py,px = src_tiff.index(*shp['coordinates'])
-            listCSV.append(get_row(px, py, cat, shp))
+            listCSV.append(get_row(px, py, cat, shp,required=req,showP=showP))
     logging.debug("[DEBUG] --- list for CSV: " + str(listCSV))
     return geoType
 
@@ -147,14 +155,17 @@ def writeCSV(outfile:str,delim:str,listCSV:list,headers:Iterable):
             outf.writeLineCSV(delim,line)
     print('--- FINISHED WRITING FILE ---')
 
-def get_headers(shapefile:str,geoType:str):
-    if geoType == 'Point':
-        headers = ['Fid']
-    else:
-        headers = ['polyId','pointId']
-    with fiona.open(shapefile) as shpfile:
-        for k in shpfile.schema['properties'].keys():
-            headers.append(k)
+def get_headers(shapefile:str,geoType:str,showP:bool,requiredCol):
+    headers = []
+    if showP:
+        if geoType == 'Point':
+            headers = ['Fid']
+        else:
+            headers = ['polyId','pointId']
+        with fiona.open(shapefile) as shpfile:
+                for k in shpfile.schema['properties'].keys():
+                    headers.append(k)
+    headers.append(requiredCol)
     headers.extend(['geox','geoy','px','py','category'])
     return headers
             
@@ -168,8 +179,8 @@ def main():
     conf = read_config('config.ini')
     logLevel = conf.get('logLevel')
     logging.basicConfig(filename="GeoLog.log",level=logLevel)
-    fiona.log.setLevel(logLevel)
-    rasterio.log.setLevel(logLevel)
+    fiona.log.setLevel('INFO')
+    rasterio.log.setLevel('INFO')
 
     if not os.path.isdir(conf.get('outfolder')):
         os.mkdir(conf.get('outfolder'))
@@ -180,6 +191,7 @@ def main():
     categories = conf.get('categories')
     tiff = conf.get('tiff')
     orderby = conf.get('orderby')
+    showP = conf.get('showproperties')
     geoType = ''
 
     try:
@@ -189,8 +201,8 @@ def main():
             listCSV = []
             geoType = ''
             for i,shp in enumerate(shapefiles):
-                geoType = process_shapefile(shp,categories[i],geoType,rasterTiff,listCSV)
-            headers = get_headers(shapefiles[0], geoType)
+                geoType = process_shapefile(shp,categories[i],geoType,rasterTiff,listCSV,orderby,showP)
+            headers = get_headers(shapefiles[0], geoType,showP,orderby)
             try:
                 orderIndex = headers.index(orderby)
             except ValueError():
