@@ -122,7 +122,7 @@ def process_shapefile(shapefile:str,cat:str,geoType:str,src_tiff,listCSV:list):
                 shapes = list(map(lambda i:map_shape(i),src_shp))
             else:
                 shapes = list(map(lambda i: {'Fid': i['properties']['MERGE_SRC'] + '_' + str(i['properties']['id']),'coordinates': i['geometry']['coordinates'][0] if len(i['geometry']['coordinates']) <=1 else i['geometry']['coordinates']},src_shp))
-    except FileNotFoundError(e):
+    except FileNotFoundError as e:
         logging.error(e)
         print("ERROR --- FILE NOT FOUND: " + str(e))
     logging.debug("[DEBUG] --- shapes: " + str(shapes))
@@ -197,7 +197,7 @@ def main():
                 orderIndex = 0
             listCSV.sort(key=lambda elem: int(elem[orderIndex]))
             writeCSV(outfile,delim,listCSV,headers)
-    except FileNotFoundError(e):
+    except FileNotFoundError as e:
         logging.error(e)
         print("ERROR --- FILE NOT FOUND: " + str(e))
 
