@@ -163,9 +163,9 @@ def get_headers(shapefile:str,geoType:str,showP:bool,requiredCol):
         else:
             headers = ['polyId','pointId']
         with fiona.open(shapefile) as shpfile:
-                for k in shpfile.schema['properties'].keys():
-                    headers.append(k)
-    headers.append(requiredCol)
+            logging.debug("[DEBUG] --- Extra properties: " + str(shpfile.schema['properties'].keys()))
+            for k in shpfile.schema['properties'].keys():
+                headers.append(k)
     headers.extend(['geox','geoy','px','py','category'])
     return headers
             
@@ -203,9 +203,17 @@ def main():
             for i,shp in enumerate(shapefiles):
                 geoType = process_shapefile(shp,categories[i],geoType,rasterTiff,listCSV,orderby,showP)
             headers = get_headers(shapefiles[0], geoType,showP,orderby)
+            logging.debug("[DEBUG] --- Headers of CSV file: " + str(headers))
             try:
                 orderIndex = headers.index(orderby)
-            except ValueError():
+                logging.debug("[DEBUG] --- Found propertie to order by at index: " + str(orderIndex))
+            except ValueError as e:
+                logging.error(e)
+                print("--- COULD NOT FIND ORDERBY VALUE ---")
+                print(e)
+                print("--- ORDERING BY FIRST ELEMENT")
+            finally:
+                logging.debug("[DEBUG] --- Using orderIndex = 0")
                 orderIndex = 0
             listCSV.sort(key=lambda elem: int(elem[orderIndex]))
             writeCSV(outfile,delim,listCSV,headers)
