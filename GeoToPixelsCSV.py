@@ -166,6 +166,8 @@ def get_headers(shapefile:str,geoType:str,showP:bool,requiredCol):
             logging.debug("[DEBUG] --- Extra properties: " + str(shpfile.schema['properties'].keys()))
             for k in shpfile.schema['properties'].keys():
                 headers.append(k)
+    else:
+        headers = [requiredCol]
     headers.extend(['geox','geoy','px','py','category'])
     return headers
             
