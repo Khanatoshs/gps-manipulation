@@ -51,7 +51,7 @@ def transformPix(rasterpath,pixList:list):
 def writeShapefile(geolist,outfilepath,crs):
     schema = {
         'geometry':'Point',
-        'properties':[('Category','Double')]
+        'properties':[('Category','float')]
     }
 
     with fiona.open(outfilepath, mode='w',driver='ESRI Shapefile',schema=schema,crs=crs) as newshp:
@@ -59,7 +59,7 @@ def writeShapefile(geolist,outfilepath,crs):
             row = {
                 'geometry':{
                     'type':'Point',
-                    'coordinates':gps},
+                    'coordinates':gps['coord']},
                 'properties':{'Category': gps['cat']}
             }
             newshp.write(row)

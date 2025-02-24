@@ -30,6 +30,7 @@ def read_config(filename) -> dict:
     tiff = conf[section].get('tiff')
     shapes = conf[section].get('shapes').split(',')
     categories = conf[section].get('categories').split(',')
+    samecategory = conf[section].getboolean('samecategory')
     outfolder = conf[section].get('outfolder')
     outfilename = conf[section].get('outfilename')
     orderby = conf[section].get('orderby')
@@ -45,7 +46,8 @@ def read_config(filename) -> dict:
         'orderby': orderby,
         'delimiter': delimiter,
         'logLevel': logLevel,
-        'showproperties': showProperties
+        'showproperties': showProperties,
+        'samecategory': samecategory
     }
     return ret_dict
 
@@ -84,6 +86,7 @@ def map_shape(shape):
         'coordinates':coordinates
     }
     resdict.update(shape['properties'])
+    logging.debug("[DEBUG] --- Obtained object: " + str(resdict))
     return resdict
 
 def get_row(px,py,cat,shape,index=None,cor=None,required = None,showP = True):
@@ -126,7 +129,7 @@ def process_shapefile(shapefile:str,cat:str,geoType:str,src_tiff,listCSV:list,re
             typeId = False
             if len(src_shp.schema['properties'].keys()) == 1 and list(src_shp.schema['properties'].keys())[0] == 'Field':
                 typeId = True 
-            if geoType == 'Point':
+            if geoType == 'Point' or geoType == '3D Point':
                 shapes = list(map(lambda i:map_shape(i),src_shp))
             else:
                 shapes = list(map(lambda i: {'Fid': i['properties']['MERGE_SRC'] + '_' + str(i['properties']['id']),'coordinates': i['geometry']['coordinates'][0] if len(i['geometry']['coordinates']) <=1 else i['geometry']['coordinates']},src_shp))
@@ -136,8 +139,10 @@ def process_shapefile(shapefile:str,cat:str,geoType:str,src_tiff,listCSV:list,re
     logging.debug("[DEBUG] --- shapes: " + str(shapes))
     print('--- FOUND ' + str(len(shapes)) + ' SHAPES OF TYPE: ' + str(geoType) + ' ---')
     for shp in shapes:
-        if geoType != 'Point':
+        if geoType != 'Point' and geoType != '3D Point':
+            print(str(shp['coordinates']))
             for i,cor in enumerate(shp['coordinates']):
+                print(cor)
                 py,px = src_tiff.index(*cor)
                 listCSV.append(get_row(px, py, cat, shp,i+1,cor))
         else:
@@ -158,7 +163,7 @@ def writeCSV(outfile:str,delim:str,listCSV:list,headers:Iterable):
 def get_headers(shapefile:str,geoType:str,showP:bool,requiredCol):
     headers = []
     if showP:
-        if geoType == 'Point':
+        if geoType == 'Point' or geoType == '3D Point':
             headers = ['Fid']
         else:
             headers = ['polyId','pointId']
@@ -190,7 +195,15 @@ def main():
     outfile = os.path.join(conf.get('outfolder'), conf.get('outfilename') +'.csv')
     delim = conf.get('delimiter')
     shapefiles = conf.get('shapes')
+    if len(shapefiles) == 1 and os.path.isdir(shapefiles[0]):
+        shapedir = shapefiles[0]
+        shapefiles = []
+        for r, d, f in os.walk(shapedir):
+            for file in f:
+                if '.shp' in file and '.xml' not in file:
+                    shapefiles.append(os.path.join(r, file))
     categories = conf.get('categories')
+    same_category = conf.get('samecategory')
     tiff = conf.get('tiff')
     orderby = conf.get('orderby')
     showP = conf.get('showproperties')
@@ -203,7 +216,11 @@ def main():
             listCSV = []
             geoType = ''
             for i,shp in enumerate(shapefiles):
-                geoType = process_shapefile(shp,categories[i],geoType,rasterTiff,listCSV,orderby,showP)
+                if same_category:
+                    cat = categories[0]
+                else:
+                    cat = categories[i]
+                geoType = process_shapefile(shp,cat,geoType,rasterTiff,listCSV,orderby,showP)
             headers = get_headers(shapefiles[0], geoType,showP,orderby)
             logging.debug("[DEBUG] --- Headers of CSV file: " + str(headers))
             try:
