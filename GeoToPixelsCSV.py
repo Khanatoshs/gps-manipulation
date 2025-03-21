@@ -1,3 +1,4 @@
+import csv
 import logging
 from genericpath import isfile
 import os
@@ -9,7 +10,9 @@ import rasterio.mask
 import rasterio.plot
 import fiona
 import configparser
-
+os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = str(pow(2,40))
+import cv2
+import numpy as np
 
 def makeConf():
     strConf = '[GEOTOPIXEL]+\n'
@@ -37,6 +40,7 @@ def read_config(filename) -> dict:
     delimiter = conf[section].get('delimiter')
     logLevel = conf[section].get('logLevel')
     showProperties = conf[section].getboolean('showproperties')
+    savePreview = conf[section].getboolean('savepreview')
     ret_dict = {
         'tiff':tiff,
         'shapes':shapes,
@@ -47,7 +51,8 @@ def read_config(filename) -> dict:
         'delimiter': delimiter,
         'logLevel': logLevel,
         'showproperties': showProperties,
-        'samecategory': samecategory
+        'samecategory': samecategory,
+        'savePreview':savePreview
     }
     return ret_dict
 
@@ -177,6 +182,28 @@ def get_headers(shapefile:str,geoType:str,showP:bool,requiredCol):
     return headers
             
 
+
+# Create image with red dots at the coordinates
+def create_image_with_dots(coordinates, tiff):
+    image = cv2.imread(tiff,cv2.IMREAD_UNCHANGED)
+    for line in coordinates:
+        cv2.circle(image, (int(line[-3]),int(line[-2])), radius=20, color=(0, 0, 255), thickness=-1)  # Red color in BGR
+
+    return image
+
+def view_image(im):
+    # Display the image
+    cv2.imshow("Image with Red Dots", im)
+    cv2.waitKey(0)  # Wait for a key press
+    cv2.destroyAllWindows()
+
+    # Optionally, save the image to a file
+def save_image(im,save_path):
+    save_path = save_path + '_red_dots.png'
+    cv2.imwrite(save_path, im)
+
+
+
 def main():
     
     if not os.path.exists('config.ini'):
@@ -239,6 +266,14 @@ def main():
     except FileNotFoundError as e:
         logging.error(e)
         print("ERROR --- FILE NOT FOUND: " + str(e))
+
+    
+    im = create_image_with_dots(listCSV,tiff)
+    # view_image(im)
+    if conf.get('savePreview'):
+        save_image(im,os.path.join(conf.get('outfolder'), conf.get('outfilename')))
+
+
 
 if __name__ == '__main__':
     main()
