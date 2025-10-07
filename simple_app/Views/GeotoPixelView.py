@@ -1,0 +1,38 @@
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from simple_app.Models.TextInputFrame import TextInputFrame
+from simple_app.Models.FileSelectorFrame import FileSelectorFrame
+from simple_app.Models.FolderSelectorFrame import FolderSelectorFrame
+from simple_app.functions.geo_to_pixel import geo_to_pixel
+
+class GeoPixelView:
+    def __init__(self, master):
+        self.master = master
+        self.content_frame = master
+        self.content_frame.pack(fill=tk.BOTH, expand=True)
+        self.process_type = geo_to_pixel
+
+    def clear_content(self):
+        for widget in self.content_frame.winfo_children():
+            widget.destroy()
+
+
+    def show_geo_to_pixel_inputs(self):
+        self.clear_content()
+        self.process_type = 'geo_to_pixel'
+        frame_tiff = FileSelectorFrame(self.content_frame, "TIFF File:", [("TIFF files", "*.tif;*.tiff")])
+        frame_csv = FileSelectorFrame(self.content_frame, "CSV File:", [("CSV files", "*.csv")])
+        frame_outfolder = FolderSelectorFrame(self.content_frame, "Output Folder:")
+        entry_outfile = TextInputFrame(self.content_frame, "Output File Name:", "Enter the name for the output CSV")
+
+        self.tiff_var = frame_tiff.path_var
+        self.csv_var = frame_csv.path_var
+        self.outfolder_var = frame_outfolder.path_var
+        self.outfile_var = entry_outfile.text_var
+
+        frame_tiff.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
+        frame_csv.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
+        frame_outfolder.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
+        entry_outfile.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
+
+  
