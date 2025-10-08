@@ -36,14 +36,14 @@ class App:
     def show_geo_to_pixel_inputs(self):
         self.clear_content()
         process_type = 'geo_to_pixel'
-        self.root.geometry("600x400")
+        self.root.geometry("600x460")
         self.view_gtp.show_geo_to_pixel_inputs()
     
 
     def show_pixel_to_geo_inputs(self):
         self.clear_content()
         process_type = 'pixel_to_geo'
-        self.root.geometry("600x400")
+        self.root.geometry("600x460")
         self.view_ptg.show_pixel_to_geo_inputs()
 
     def clear_content(self):

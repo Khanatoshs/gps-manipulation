@@ -28,15 +28,20 @@ class GeoPixelView:
         frame_csv = FileSelectorFrame(self.content_frame, "CSV File:", [("CSV files", "*.csv")])
         frame_outfolder = FolderSelectorFrame(self.content_frame, "Output Folder:")
         entry_outfile = TextInputFrame(self.content_frame, "Output File Name:", "Enter the name for the output CSV")
+        entry_category = TextInputFrame(self.content_frame, "Category:", "Enter the category of the points")
+        button_process = tk.Button(self.content_frame, text="Process", command=self.process)
 
         self.tiff_var = frame_tiff.path_var
         self.csv_var = frame_csv.path_var
         self.outfolder_var = frame_outfolder.path_var
         self.outfile_var = entry_outfile.text_var
+        self.category_var = entry_category.text_var
 
         frame_tiff.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
         frame_csv.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
         frame_outfolder.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
         entry_outfile.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
+        entry_category.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
+        button_process.pack(side=tk.TOP, pady=20)
 
   
