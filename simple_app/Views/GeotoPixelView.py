@@ -10,16 +10,20 @@ class GeoPixelView:
         self.master = master
         self.content_frame = master
         self.content_frame.pack(fill=tk.BOTH, expand=True)
-        self.process_type = geo_to_pixel
+        self.process_func = geo_to_pixel
 
-    def clear_content(self):
-        for widget in self.content_frame.winfo_children():
-            widget.destroy()
-
+    def process(self):
+        if self.process_func is not None:
+            tiff_path = self.tiff_var.get()
+            csv_path = self.csv_var.get()
+            out_folder = self.outfolder_var.get()
+            out_filename = self.outfile_var.get()
+            if not tiff_path or not csv_path or not out_folder or not out_filename:
+                messagebox.showwarning("Input Error", "Please enter all required fields.")
+                return
+            self.process_func(csv_path, tiff_path,out_folder,out_filename)
 
     def show_geo_to_pixel_inputs(self):
-        self.clear_content()
-        self.process_type = 'geo_to_pixel'
         frame_tiff = FileSelectorFrame(self.content_frame, "TIFF File:", [("TIFF files", "*.tif;*.tiff")])
         frame_csv = FileSelectorFrame(self.content_frame, "CSV File:", [("CSV files", "*.csv")])
         frame_outfolder = FolderSelectorFrame(self.content_frame, "Output Folder:")
