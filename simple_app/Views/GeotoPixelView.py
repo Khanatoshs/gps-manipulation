@@ -18,17 +18,39 @@ class GeoPixelView:
             csv_path = self.csv_var.get()
             out_folder = self.outfolder_var.get()
             out_filename = self.outfile_var.get()
-            if not tiff_path or not csv_path or not out_folder or not out_filename:
-                messagebox.showwarning("Input Error", "Please enter all required fields.")
-                return
-            self.process_func(csv_path, tiff_path,out_folder,out_filename)
+            categories = self.category_var.get().split(',')
+            None if not self.check_inputs() else self.process_func(out_folder=out_folder,out_file=out_filename,
+                                                                  shapes=[csv_path],tiff_path=tiff_path,
+                                                                  categories=categories) 
+
+    def check_inputs(self):
+        if not self.tiff_var.get():
+            messagebox.showwarning("Input Error", "Please enter path to tiff file.")
+            return False
+        if not self.csv_var.get():
+            messagebox.showwarning("Input Error", "Please enter path to shp file.")
+            return False
+        if not self.outfolder_var.get():
+            messagebox.showwarning("Input Error", "Please enter output folder.")
+            return False
+        if not self.outfile_var.get() or self.outfile_var.get() == self.outfile_placeholder:
+            messagebox.showwarning("Input Error", "Please enter output file name.")
+            return False
+        if not self.category_var.get() or self.category_var.get() == self.category_placeholder:
+            messagebox.showwarning("Input Error", "Please enter a valid category.")
+            return False
+        return True
 
     def show_geo_to_pixel_inputs(self):
-        frame_tiff = FileSelectorFrame(self.content_frame, "TIFF File:", [("TIFF files", "*.tif;*.tiff")])
-        frame_csv = FileSelectorFrame(self.content_frame, "CSV File:", [("CSV files", "*.csv")])
+        self.category_placeholder = "Enter the category of the points"
+        self.outfile_placeholder = "Enter the name for the output CSV"
+
+        label_title = tk.Label(self.content_frame, text="Geo to Pixel Coordinate Conversion", font=("Arial", 16))
+        frame_tiff = FileSelectorFrame(self.content_frame, "TIFF File:", [("TIFF files", "*.tif *.tiff")])
+        frame_csv = FileSelectorFrame(self.content_frame, "Shape File:", [("SHAPE files", "*.shp")])
         frame_outfolder = FolderSelectorFrame(self.content_frame, "Output Folder:")
-        entry_outfile = TextInputFrame(self.content_frame, "Output File Name:", "Enter the name for the output CSV")
-        entry_category = TextInputFrame(self.content_frame, "Category:", "Enter the category of the points")
+        entry_outfile = TextInputFrame(self.content_frame, "Output File Name:", self.outfile_placeholder)
+        entry_category = TextInputFrame(self.content_frame, "Category:", self.category_placeholder)
         button_process = tk.Button(self.content_frame, text="Process", command=self.process)
 
         self.tiff_var = frame_tiff.path_var
@@ -37,6 +59,7 @@ class GeoPixelView:
         self.outfile_var = entry_outfile.text_var
         self.category_var = entry_category.text_var
 
+        label_title.pack(pady=10)
         frame_tiff.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
         frame_csv.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
         frame_outfolder.pack(side=tk.TOP, fill=tk.X, padx=20, pady=10)
